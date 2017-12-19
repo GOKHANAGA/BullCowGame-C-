@@ -4,6 +4,12 @@
 using FString = std::string;
 using int32 = int;
 
+struct BullCowCount
+{
+	int32 Bulls=0;
+	int32 Cows=0;
+};
+
 class FBullCowGame {
 public:
 	FBullCowGame(); //const
@@ -13,7 +19,8 @@ public:
 	bool IsGameWon() const;
 	bool CheckGuessValidity(FString);
 
-	//provide a method for counting bulls & cows, and increasing try number(#)
+	//counts bulls & cows, and increases try number(#) assuming valid guess
+	BullCowCount SubmitGuess(FString);
 
 
 private:
