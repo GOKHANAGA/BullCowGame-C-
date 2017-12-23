@@ -3,18 +3,23 @@ This is the console executable, that makes use of the BullCow class
 this acts as the view in a MVC Pattern, and is responsible for aþþ
 user intereaction.For game logic see the FBullCowGame class
 */
+#pragma once
+
 #include<iostream>
 #include<string>
 #include "FBullCowGame.h"
 
+//to make syntax unreal friendly
 using FText = std::string;
 using int32 = int;
 
+//function prototypes as outside a class
 void PrintIntro();
 void PlayGame();
-FText GetGuess();
+FText GetValidGuess();
 bool AskToPlayAgain();
-FBullCowGame BCGame; //instantiate a new game
+FBullCowGame BCGame; //instantiate a new game,which we re-use accross players
+void PrintGameSummary();
 
 //The entry point for our application
 int main() {
@@ -22,44 +27,68 @@ int main() {
 	do {
 		PrintIntro();
 		PlayGame();
-		//TODO add a game summary
 	} while (AskToPlayAgain());
 
 	return 0;
 }
 
-
+//plays a single game to completion
 void PlayGame()
 {
 	BCGame.Reset();
-	//Loop for the number of turns asking for gueeses
-		//TODO change from For to while loop once we are validating tries
-	for (int32 i = 0; i < BCGame.GetMaxTries(); i++) {
-		//repeat the guess back to them
-		std::cout << "Your guess was :" << GetGuess() << std::endl; //TODO make loop checking valid guess
-		//Submit valid guess to the game
-		//Print number of bull and cows
-		std::cout << std::endl;
+	int32 MaxTries = BCGame.GetMaxTries();
+	
+	//loop asking for guesses while the game 
+	//is NOT won and there are still tries remaining
+	while (!BCGame.IsGameWon() && BCGame.GetCurrentTry() <= MaxTries) {
+		FText Guess = GetValidGuess();
+
+		//Submit valid guess to the game and receive counts
+		FBullCowCount BullCowCount = BCGame.SubmitValidGuess(Guess);
+
+		std::cout << "Bulls = " << BullCowCount.Bulls;
+		std::cout << ". Cows =" << BullCowCount.Cows << "\n\n";
 	}
 
-	//TODO sumarise game
+	PrintGameSummary();
 }
 
 //int32roduce the game
+//loop until user gives a valid guess
+FText GetValidGuess() {
 
-FText GetGuess() {
-
-	//get a guess from the player
-	std::cout << "Try" << BCGame.GetCurrentTry() << ".Enter your guess: ";
 	FText Guess = "";
-	getline(std::cin, Guess);
+	EGuessStatus Status = EGuessStatus::Invalid_Status;
+	do {
+		//get a guess from the player
+		std::cout << "Try " << BCGame.GetCurrentTry() << " of " << BCGame.GetMaxTries();
+		std::cout << ".Enter your guess: ";
+		getline(std::cin, Guess);
+
+		Status = BCGame.CheckGuessValidity(Guess);
+
+		switch (Status)
+		{
+		case EGuessStatus::Wrong_Length:
+			std::cout << "Please enter a " << BCGame.GetHiddenWordLength() << "letter word.\n\n";
+			break;
+		case EGuessStatus::Not_Isogram:
+			std::cout << "Please enter a word without repeating letters.\n\n";
+			break;
+		case EGuessStatus::Not_Lowercase:
+			std::cout << "Your guess should be in all lower case letters.\n\n";
+			break;
+		default:
+			break;
+		}
+	} while (Status != EGuessStatus::OK);//keep looping until we get no errors
 
 	return Guess;
 }
 
 bool AskToPlayAgain()
 {
-	std::cout << "Do you want to play again? (y/n)";
+	std::cout << "Do you want to play again with the same word? (y/n)";
 	FText Response = "";
 	getline(std::cin, Response);
 
@@ -68,11 +97,19 @@ bool AskToPlayAgain()
 
 void PrintIntro() {
 
-	constexpr int32 WORD_LENGTH = 5;
-
-	std::cout << "Welcome to Bulls and Cows,a fun word game\n";
-	std::cout << "Can you guess the " << WORD_LENGTH;
-	std::cout << " letters of isogram i'm thinking of?\n";
+	std::cout << "\n\nWelcome to Bulls and Cows,a fun word game\n";
+	std::cout << "Can you guess the " << BCGame.GetHiddenWordLength();
+	std::cout << " letters of isogram i'm thinking of?\n\n";
 
 	return;
+}
+
+void PrintGameSummary() {
+	if (BCGame.IsGameWon()) {
+		std::cout << "Congratulations You Won.\n";
+	}
+	else
+	{
+		std::cout << "Better luck next time.\n";
+	}
 }
